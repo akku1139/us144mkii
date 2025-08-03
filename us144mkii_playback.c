@@ -71,7 +71,8 @@ static int tascam_playback_prepare(struct snd_pcm_substream *substream)
 
 	nominal_frames_per_packet = runtime->rate / 8000;
 	for (i = 0; i < FEEDBACK_ACCUMULATOR_SIZE; i++)
-		tascam->feedback_accumulator_pattern[i] = nominal_frames_per_packet;
+		tascam->feedback_accumulator_pattern[i] =
+			nominal_frames_per_packet;
 
 	feedback_packets = 1;
 
@@ -80,9 +81,11 @@ static int tascam_playback_prepare(struct snd_pcm_substream *substream)
 		int j;
 
 		f_urb->number_of_packets = feedback_packets;
-		f_urb->transfer_buffer_length = feedback_packets * FEEDBACK_PACKET_SIZE;
+		f_urb->transfer_buffer_length =
+			feedback_packets * FEEDBACK_PACKET_SIZE;
 		for (j = 0; j < feedback_packets; j++) {
-			f_urb->iso_frame_desc[j].offset = j * FEEDBACK_PACKET_SIZE;
+			f_urb->iso_frame_desc[j].offset =
+				j * FEEDBACK_PACKET_SIZE;
 			f_urb->iso_frame_desc[j].length = FEEDBACK_PACKET_SIZE;
 		}
 	}
@@ -93,12 +96,15 @@ static int tascam_playback_prepare(struct snd_pcm_substream *substream)
 	for (u = 0; u < NUM_PLAYBACK_URBS; u++) {
 		struct urb *urb = tascam->playback_urbs[u];
 
-		memset(urb->transfer_buffer, 0, tascam->playback_urb_alloc_size);
+		memset(urb->transfer_buffer, 0,
+		       tascam->playback_urb_alloc_size);
 		urb->transfer_buffer_length = total_bytes_in_urb;
 		urb->number_of_packets = PLAYBACK_URB_PACKETS;
 		for (i = 0; i < PLAYBACK_URB_PACKETS; i++) {
-			urb->iso_frame_desc[i].offset = i * nominal_bytes_per_packet;
-			urb->iso_frame_desc[i].length = nominal_bytes_per_packet;
+			urb->iso_frame_desc[i].offset =
+				i * nominal_bytes_per_packet;
+			urb->iso_frame_desc[i].length =
+				nominal_bytes_per_packet;
 		}
 	}
 
@@ -114,7 +120,8 @@ static int tascam_playback_prepare(struct snd_pcm_substream *substream)
  *
  * Return: The current playback pointer position in frames.
  */
-static snd_pcm_uframes_t tascam_playback_pointer(struct snd_pcm_substream *substream)
+static snd_pcm_uframes_t
+tascam_playback_pointer(struct snd_pcm_substream *substream)
 {
 	struct tascam_card *tascam = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -171,9 +178,11 @@ void playback_urb_complete(struct urb *urb)
 	int ret, i;
 
 	if (urb->status) {
-		if (urb->status != -ENOENT && urb->status != -ECONNRESET && urb->status != -ESHUTDOWN &&
-		    urb->status != -ENODEV)
-			dev_err_ratelimited(tascam->card->dev, "Playback URB failed: %d\n", urb->status);
+		if (urb->status != -ENOENT && urb->status != -ECONNRESET &&
+		    urb->status != -ESHUTDOWN && urb->status != -ENODEV)
+			dev_err_ratelimited(tascam->card->dev,
+					    "Playback URB failed: %d\n",
+					    urb->status);
 		goto out;
 	}
 	if (!tascam || !atomic_read(&tascam->playback_active))
@@ -191,8 +200,12 @@ void playback_urb_complete(struct urb *urb)
 		size_t bytes_for_packet;
 
 		if (tascam->feedback_synced) {
-			frames_for_packet = tascam->feedback_accumulator_pattern[tascam->feedback_pattern_out_idx];
-			tascam->feedback_pattern_out_idx = (tascam->feedback_pattern_out_idx + 1) % FEEDBACK_ACCUMULATOR_SIZE;
+			frames_for_packet =
+				tascam->feedback_accumulator_pattern
+					[tascam->feedback_pattern_out_idx];
+			tascam->feedback_pattern_out_idx =
+				(tascam->feedback_pattern_out_idx + 1) %
+				FEEDBACK_ACCUMULATOR_SIZE;
 		} else {
 			frames_for_packet = runtime->rate / 8000;
 		}
@@ -206,27 +219,33 @@ void playback_urb_complete(struct urb *urb)
 
 	offset_frames = tascam->driver_playback_pos;
 	frames_to_copy = bytes_to_frames(runtime, total_bytes_for_urb);
-	tascam->driver_playback_pos = (offset_frames + frames_to_copy) % runtime->buffer_size;
+	tascam->driver_playback_pos =
+		(offset_frames + frames_to_copy) % runtime->buffer_size;
 
 	spin_unlock_irqrestore(&tascam->lock, flags);
 
 	if (total_bytes_for_urb > 0) {
-		src_buf = runtime->dma_area + frames_to_bytes(runtime, offset_frames);
+		src_buf = runtime->dma_area +
+			  frames_to_bytes(runtime, offset_frames);
 		dst_buf = tascam->playback_routing_buffer;
 
 		/* Handle ring buffer wrap-around */
 		if (offset_frames + frames_to_copy > runtime->buffer_size) {
-			size_t first_chunk_bytes = frames_to_bytes(runtime, runtime->buffer_size - offset_frames);
-			size_t second_chunk_bytes = total_bytes_for_urb - first_chunk_bytes;
+			size_t first_chunk_bytes = frames_to_bytes(
+				runtime, runtime->buffer_size - offset_frames);
+			size_t second_chunk_bytes =
+				total_bytes_for_urb - first_chunk_bytes;
 
 			memcpy(dst_buf, src_buf, first_chunk_bytes);
-			memcpy(dst_buf + first_chunk_bytes, runtime->dma_area, second_chunk_bytes);
+			memcpy(dst_buf + first_chunk_bytes, runtime->dma_area,
+			       second_chunk_bytes);
 		} else {
 			memcpy(dst_buf, src_buf, total_bytes_for_urb);
 		}
 
 		/* Apply routing to the contiguous data in our routing buffer */
-		process_playback_routing_us144mkii(tascam, dst_buf, dst_buf, frames_to_copy);
+		process_playback_routing_us144mkii(tascam, dst_buf, dst_buf,
+						   frames_to_copy);
 		memcpy(urb->transfer_buffer, dst_buf, total_bytes_for_urb);
 	}
 
@@ -235,7 +254,9 @@ void playback_urb_complete(struct urb *urb)
 	usb_anchor_urb(urb, &tascam->playback_anchor);
 	ret = usb_submit_urb(urb, GFP_ATOMIC);
 	if (ret < 0) {
-		dev_err_ratelimited(tascam->card->dev, "Failed to resubmit playback URB: %d\n", ret);
+		dev_err_ratelimited(tascam->card->dev,
+				    "Failed to resubmit playback URB: %d\n",
+				    ret);
 		usb_unanchor_urb(urb);
 		usb_put_urb(urb);
 	}
@@ -267,9 +288,11 @@ void feedback_urb_complete(struct urb *urb)
 	bool capture_period_elapsed = false;
 
 	if (urb->status) {
-		if (urb->status != -ENOENT && urb->status != -ECONNRESET && urb->status != -ESHUTDOWN &&
-		    urb->status != -ENODEV)
-			dev_err_ratelimited(tascam->card->dev, "Feedback URB failed: %d\n", urb->status);
+		if (urb->status != -ENOENT && urb->status != -ECONNRESET &&
+		    urb->status != -ESHUTDOWN && urb->status != -ENODEV)
+			dev_err_ratelimited(tascam->card->dev,
+					    "Feedback URB failed: %d\n",
+					    urb->status);
 		goto out;
 	}
 	if (!tascam || !atomic_read(&tascam->playback_active))
@@ -299,18 +322,25 @@ void feedback_urb_complete(struct urb *urb)
 				  urb->iso_frame_desc[p].actual_length >= 1);
 
 		if (packet_ok)
-			feedback_value = *((u8 *)urb->transfer_buffer + urb->iso_frame_desc[p].offset);
+			feedback_value = *((u8 *)urb->transfer_buffer +
+					   urb->iso_frame_desc[p].offset);
 
-		if (packet_ok && feedback_value >= tascam->feedback_base_value &&
+		if (packet_ok &&
+		    feedback_value >= tascam->feedback_base_value &&
 		    feedback_value <= tascam->feedback_max_value) {
-			pattern = tascam->feedback_patterns[feedback_value - tascam->feedback_base_value];
+			pattern = tascam->feedback_patterns
+					  [feedback_value -
+					   tascam->feedback_base_value];
 			tascam->feedback_consecutive_errors = 0;
 			int i;
 
 			for (i = 0; i < 8; i++) {
-				unsigned int in_idx = (tascam->feedback_pattern_in_idx + i) % FEEDBACK_ACCUMULATOR_SIZE;
+				unsigned int in_idx =
+					(tascam->feedback_pattern_in_idx + i) %
+					FEEDBACK_ACCUMULATOR_SIZE;
 
-				tascam->feedback_accumulator_pattern[in_idx] = pattern[i];
+				tascam->feedback_accumulator_pattern[in_idx] =
+					pattern[i];
 				total_frames_in_urb += pattern[i];
 			}
 		} else {
@@ -319,35 +349,52 @@ void feedback_urb_complete(struct urb *urb)
 
 			if (tascam->feedback_synced) {
 				tascam->feedback_consecutive_errors++;
-				if (tascam->feedback_consecutive_errors > FEEDBACK_SYNC_LOSS_THRESHOLD) {
-					dev_err(tascam->card->dev, "Fatal: Feedback sync lost. Stopping stream.\n");
+				if (tascam->feedback_consecutive_errors >
+				    FEEDBACK_SYNC_LOSS_THRESHOLD) {
+					dev_err(tascam->card->dev,
+						"Fatal: Feedback sync lost. Stopping stream.\n");
 					if (playback_ss)
-						snd_pcm_stop(playback_ss, SNDRV_PCM_STATE_XRUN);
+						snd_pcm_stop(
+							playback_ss,
+							SNDRV_PCM_STATE_XRUN);
 					if (capture_ss)
-						snd_pcm_stop(capture_ss, SNDRV_PCM_STATE_XRUN);
+						snd_pcm_stop(
+							capture_ss,
+							SNDRV_PCM_STATE_XRUN);
 					tascam->feedback_synced = false;
 					goto unlock_and_continue;
 				}
 			}
 			for (i = 0; i < 8; i++) {
-				unsigned int in_idx = (tascam->feedback_pattern_in_idx + i) % FEEDBACK_ACCUMULATOR_SIZE;
+				unsigned int in_idx =
+					(tascam->feedback_pattern_in_idx + i) %
+					FEEDBACK_ACCUMULATOR_SIZE;
 
-				tascam->feedback_accumulator_pattern[in_idx] = nominal_frames;
+				tascam->feedback_accumulator_pattern[in_idx] =
+					nominal_frames;
 				total_frames_in_urb += nominal_frames;
 			}
 		}
-		tascam->feedback_pattern_in_idx = (tascam->feedback_pattern_in_idx + 8) % FEEDBACK_ACCUMULATOR_SIZE;
+		tascam->feedback_pattern_in_idx =
+			(tascam->feedback_pattern_in_idx + 8) %
+			FEEDBACK_ACCUMULATOR_SIZE;
 	}
 
 	new_in_idx = tascam->feedback_pattern_in_idx;
 
 	if (!tascam->feedback_synced) {
 		unsigned int out_idx = tascam->feedback_pattern_out_idx;
-		bool is_ahead = (new_in_idx - out_idx) % FEEDBACK_ACCUMULATOR_SIZE < (FEEDBACK_ACCUMULATOR_SIZE / 2);
-		bool was_behind = (old_in_idx - out_idx) % FEEDBACK_ACCUMULATOR_SIZE >= (FEEDBACK_ACCUMULATOR_SIZE / 2);
+		bool is_ahead =
+			(new_in_idx - out_idx) % FEEDBACK_ACCUMULATOR_SIZE <
+			(FEEDBACK_ACCUMULATOR_SIZE / 2);
+		bool was_behind =
+			(old_in_idx - out_idx) % FEEDBACK_ACCUMULATOR_SIZE >=
+			(FEEDBACK_ACCUMULATOR_SIZE / 2);
 
 		if (is_ahead && was_behind) {
-			dev_dbg(tascam->card->dev, "Sync Acquired! (in: %u, out: %u)\n", new_in_idx, out_idx);
+			dev_dbg(tascam->card->dev,
+				"Sync Acquired! (in: %u, out: %u)\n",
+				new_in_idx, out_idx);
 			tascam->feedback_synced = true;
 			tascam->feedback_consecutive_errors = 0;
 		}
@@ -360,7 +407,8 @@ void feedback_urb_complete(struct urb *urb)
 	}
 
 	if (playback_rt->period_size > 0) {
-		u64 current_period = div_u64(tascam->playback_frames_consumed, playback_rt->period_size);
+		u64 current_period = div_u64(tascam->playback_frames_consumed,
+					     playback_rt->period_size);
 
 		if (current_period > tascam->last_period_pos) {
 			tascam->last_period_pos = current_period;
@@ -368,11 +416,15 @@ void feedback_urb_complete(struct urb *urb)
 		}
 	}
 
-	if (atomic_read(&tascam->capture_active) && capture_rt && capture_rt->period_size > 0) {
-		u64 current_capture_period = div_u64(tascam->capture_frames_processed, capture_rt->period_size);
+	if (atomic_read(&tascam->capture_active) && capture_rt &&
+	    capture_rt->period_size > 0) {
+		u64 current_capture_period =
+			div_u64(tascam->capture_frames_processed,
+				capture_rt->period_size);
 
 		if (current_capture_period > tascam->last_capture_period_pos) {
-			tascam->last_capture_period_pos = current_capture_period;
+			tascam->last_capture_period_pos =
+				current_capture_period;
 			capture_period_elapsed = true;
 		}
 	}
@@ -390,7 +442,9 @@ unlock_and_continue:
 	usb_anchor_urb(urb, &tascam->feedback_anchor);
 	ret = usb_submit_urb(urb, GFP_ATOMIC);
 	if (ret < 0) {
-		dev_err_ratelimited(tascam->card->dev, "Failed to resubmit feedback URB: %d\n", ret);
+		dev_err_ratelimited(tascam->card->dev,
+				    "Failed to resubmit feedback URB: %d\n",
+				    ret);
 		usb_unanchor_urb(urb);
 		usb_put_urb(urb);
 	}

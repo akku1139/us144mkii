@@ -96,7 +96,9 @@ int us144mkii_configure_device_for_rate(struct tascam_card *tascam, int rate);
  * @dst_buffer: Buffer to be filled for the USB device.
  * @frames: Number of frames to process.
  */
-void process_playback_routing_us144mkii(struct tascam_card *tascam, const u8 *src_buffer, u8 *dst_buffer, size_t frames);
+void process_playback_routing_us144mkii(struct tascam_card *tascam,
+					const u8 *src_buffer, u8 *dst_buffer,
+					size_t frames);
 
 /**
  * process_capture_routing_us144mkii() - Apply capture routing matrix
@@ -104,7 +106,9 @@ void process_playback_routing_us144mkii(struct tascam_card *tascam, const u8 *sr
  * @decoded_block: Buffer containing 4 channels of S32LE decoded audio.
  * @routed_block: Buffer to be filled for ALSA.
  */
-void process_capture_routing_us144mkii(struct tascam_card *tascam, const s32 *decoded_block, s32 *routed_block);
+void process_capture_routing_us144mkii(struct tascam_card *tascam,
+				       const s32 *decoded_block,
+				       s32 *routed_block);
 
 /**
  * tascam_pcm_hw_params() - Configures hardware parameters for PCM streams.
@@ -118,7 +122,8 @@ void process_capture_routing_us144mkii(struct tascam_card *tascam, const s32 *de
  *
  * Return: 0 on success, or a negative error code on failure.
  */
-int tascam_pcm_hw_params(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params);
+int tascam_pcm_hw_params(struct snd_pcm_substream *substream,
+			 struct snd_pcm_hw_params *params);
 
 /**
  * tascam_pcm_hw_free() - Frees hardware parameters for PCM streams.
