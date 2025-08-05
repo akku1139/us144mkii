@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 // Copyright (c) 2025 Šerif Rami <ramiserifpersia@gmail.com>
 
-#ifndef __US144MKII_PCM_H
-#define __US144MKII_PCM_H
+#ifndef __USX2Y_MKII_PCM_H
+#define __USX2Y_MKII_PCM_H
 
 #define NUM_CHANNELS 4
 
@@ -162,4 +162,4 @@ int tascam_pcm_trigger(struct snd_pcm_substream *substream, int cmd);
  */
 void tascam_capture_work_handler(struct work_struct *work);
 
-#endif /* __US144MKII_PCM_H */
+#endif /* __USX2Y_MKII_PCM_H */

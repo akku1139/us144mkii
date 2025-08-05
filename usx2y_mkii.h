@@ -345,4 +345,4 @@ int tascam_create_midi(struct tascam_card *tascam);
  */
 int tascam_create_controls(struct tascam_card *tascam);
 
-#endif /* __US144MKII_H */
+#endif /* __USX2Y_MKII_H */
