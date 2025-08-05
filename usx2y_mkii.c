@@ -72,7 +72,6 @@ void tascam_free_urbs(struct tascam_card *tascam) {
       usb_free_coherent(tascam->dev, tascam->playback_urb_alloc_size,
                         tascam->playback_urbs[i]->transfer_buffer,
                         tascam->playback_urbs[i]->transfer_dma);
-      usb_free_urb(tascam->playback_urbs[i]);
       tascam->playback_urbs[i] = NULL;
     }
   }
@@ -83,7 +82,6 @@ void tascam_free_urbs(struct tascam_card *tascam) {
       usb_free_coherent(tascam->dev, tascam->feedback_urb_alloc_size,
                         tascam->feedback_urbs[i]->transfer_buffer,
                         tascam->feedback_urbs[i]->transfer_dma);
-      usb_free_urb(tascam->feedback_urbs[i]);
       tascam->feedback_urbs[i] = NULL;
     }
   }
@@ -94,7 +92,6 @@ void tascam_free_urbs(struct tascam_card *tascam) {
       usb_free_coherent(tascam->dev, tascam->capture_urb_alloc_size,
                         tascam->capture_urbs[i]->transfer_buffer,
                         tascam->capture_urbs[i]->transfer_dma);
-      usb_free_urb(tascam->capture_urbs[i]);
       tascam->capture_urbs[i] = NULL;
     }
   }
@@ -105,7 +102,6 @@ void tascam_free_urbs(struct tascam_card *tascam) {
       usb_free_coherent(tascam->dev, MIDI_IN_BUF_SIZE,
                         tascam->midi_in_urbs[i]->transfer_buffer,
                         tascam->midi_in_urbs[i]->transfer_dma);
-      usb_free_urb(tascam->midi_in_urbs[i]);
       tascam->midi_in_urbs[i] = NULL;
     }
   }
@@ -116,7 +112,6 @@ void tascam_free_urbs(struct tascam_card *tascam) {
       usb_free_coherent(tascam->dev, MIDI_OUT_BUF_SIZE,
                         tascam->midi_out_urbs[i]->transfer_buffer,
                         tascam->midi_out_urbs[i]->transfer_dma);
-      usb_free_urb(tascam->midi_out_urbs[i]);
       tascam->midi_out_urbs[i] = NULL;
     }
   }

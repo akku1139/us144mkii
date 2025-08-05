@@ -104,7 +104,8 @@ enum tascam_register {
 #define RAW_BYTES_PER_DECODE_BLOCK 512
 
 /**
- * struct tascam_card - Main driver data structure for TASCAM US-122MKII/US-144MKII devices.
+ * struct tascam_card - Main driver data structure for TASCAM
+ * US-122MKII/US-144MKII devices.
  * @dev: Pointer to the USB device.
  * @iface0: Pointer to USB interface 0 (audio).
  * @iface1: Pointer to USB interface 1 (MIDI).

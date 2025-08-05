@@ -378,49 +378,38 @@ int tascam_pcm_trigger(struct snd_pcm_substream *substream, int cmd) {
   spin_unlock_irqrestore(&tascam->lock, flags);
 
   if (do_start) {
-    if (atomic_read(&tascam->active_urbs) > 0) {
-      dev_WARN(tascam->card->dev, "Cannot start, URBs still active.\n");
-      return -EAGAIN;
-    }
-
     for (i = 0; i < NUM_FEEDBACK_URBS; i++) {
-      usb_get_urb(tascam->feedback_urbs[i]);
       usb_anchor_urb(tascam->feedback_urbs[i], &tascam->feedback_anchor);
       err = usb_submit_urb(tascam->feedback_urbs[i], GFP_ATOMIC);
       if (err < 0) {
         usb_unanchor_urb(tascam->feedback_urbs[i]);
-        usb_put_urb(tascam->feedback_urbs[i]);
         goto start_rollback;
       }
-      atomic_inc(&tascam->active_urbs);
     }
     for (i = 0; i < NUM_PLAYBACK_URBS; i++) {
-      usb_get_urb(tascam->playback_urbs[i]);
       usb_anchor_urb(tascam->playback_urbs[i], &tascam->playback_anchor);
       err = usb_submit_urb(tascam->playback_urbs[i], GFP_ATOMIC);
       if (err < 0) {
         usb_unanchor_urb(tascam->playback_urbs[i]);
-        usb_put_urb(tascam->playback_urbs[i]);
         goto start_rollback;
       }
-      atomic_inc(&tascam->active_urbs);
     }
     for (i = 0; i < NUM_CAPTURE_URBS; i++) {
-      usb_get_urb(tascam->capture_urbs[i]);
       usb_anchor_urb(tascam->capture_urbs[i], &tascam->capture_anchor);
       err = usb_submit_urb(tascam->capture_urbs[i], GFP_ATOMIC);
       if (err < 0) {
         usb_unanchor_urb(tascam->capture_urbs[i]);
-        usb_put_urb(tascam->capture_urbs[i]);
         goto start_rollback;
       }
-      atomic_inc(&tascam->active_urbs);
     }
 
     return 0;
   start_rollback:
     dev_err(tascam->card->dev, "Failed to submit URBs to start stream: %d\n",
             err);
+    usb_kill_anchored_urbs(&tascam->feedback_anchor);
+    usb_kill_anchored_urbs(&tascam->playback_anchor);
+    usb_kill_anchored_urbs(&tascam->capture_anchor);
     do_stop = true;
   }
 
