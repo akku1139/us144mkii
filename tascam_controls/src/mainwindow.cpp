@@ -80,11 +80,11 @@ const QString DARK_STYLESHEET = R"(
 
 MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent)
-    , m_alsa()
+    , m_alsa({"US144MKII", "US122MKII"})
     , m_aboutDialog(nullptr)
 {
     if (!m_alsa.isCardFound()) {
-        QMessageBox::critical(this, "Error", "TASCAM US-144MKII Not Found.\nPlease ensure the device is connected and the 'us144mkii' driver is loaded.");
+        QMessageBox::critical(this, "Error", QString("TASCAM %1 Not Found.\nPlease ensure the device is connected and the 'us144mkii' driver is loaded.").arg(QString::fromStdString(m_alsa.getFoundCardName().empty() ? "Device" : m_alsa.getFoundCardName())));
         QTimer::singleShot(0, this, &QWidget::close);
         return;
     }
@@ -94,7 +94,7 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 void MainWindow::initUi() {
-    setWindowTitle("TASCAM US-144MKII Control Panel");
+    setWindowTitle("TASCAM US122MKII/US144MKII Control Panel");
     setWindowIcon(QIcon(":/tascam-control-panel.png"));
     setFixedSize(550, 450);
     setStyleSheet(DARK_STYLESHEET);
@@ -113,7 +113,7 @@ void MainWindow::initUi() {
 
     auto *logoLabel = new QLabel();
     logoLabel->setPixmap(QPixmap(":/logo.png").scaledToWidth(250, Qt::SmoothTransformation));
-    auto *titleLabel = new QLabel("US-144 MKII Control Panel");
+    auto *titleLabel = new QLabel(QString("%1 Control Panel").arg(QString::fromStdString(m_alsa.getFoundCardName())));
     titleLabel->setObjectName("Title");
 
     auto *infoGrid = new QGridLayout();
@@ -135,7 +135,13 @@ void MainWindow::initUi() {
     }
 
     auto *deviceImageLabel = new QLabel();
-    deviceImageLabel->setPixmap(QPixmap(":/device.png").scaled(250, 250, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    QString deviceImage;
+    if (QString::fromStdString(m_alsa.getFoundCardName()) == "US122MKII") {
+        deviceImage = ":/device_122mkii.png";
+    } else {
+        deviceImage = ":/device_144mkii.png";
+    }
+    deviceImageLabel->setPixmap(QPixmap(deviceImage).scaled(250, 250, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     deviceImageLabel->setAlignment(Qt::AlignCenter);
 
     leftPanel->addWidget(logoLabel);
@@ -153,24 +159,29 @@ void MainWindow::initUi() {
         middlePanel->addWidget(widget);
     };
 
-    auto capture12Pair = createControlWidget("ch1 and ch2", {"analog inputs", "digital inputs"});
-    m_capture12Combo = capture12Pair.second;
-    m_capture12Combo->setToolTip("Select the source for capture channels 1 and 2.");
-    auto capture34Pair = createControlWidget("ch3 and ch4", {"analog inputs", "digital inputs"});
-    m_capture34Combo = capture34Pair.second;
-    m_capture34Combo->setToolTip("Select the source for capture channels 3 and 4.");
-    addSection("INPUTS", capture12Pair.first);
-    middlePanel->addWidget(capture34Pair.first);
+    if (QString::fromStdString(m_alsa.getFoundCardName()) == "US144MKII") {
+        auto capture12Pair = createControlWidget("ch1 and ch2", QStringList({"analog inputs", "digital inputs"}));
+        m_capture12Combo = capture12Pair.second;
+        m_capture12Combo->setToolTip("Select the source for capture channels 1 and 2.");
+        addSection("INPUTS", capture12Pair.first);
 
-    auto lineOutPair = createControlWidget("ch1 and ch2", {"ch1 and ch2", "ch3 and ch4"});
-    m_lineOutCombo = lineOutPair.second;
-    m_lineOutCombo->setToolTip("Select the source for the line outputs.");
-    addSection("LINE OUTPUTS", lineOutPair.first);
+        auto capture34Pair = createControlWidget("ch3 and ch4", {"analog inputs", "digital inputs"});
+        m_capture34Combo = capture34Pair.second;
+        m_capture34Combo->setToolTip("Select the source for capture channels 3 and 4.");
+        middlePanel->addWidget(capture34Pair.first);
+    }
 
-    auto digitalOutPair = createControlWidget("ch3 and ch4", {"ch1 and ch2", "ch3 and ch4"});
-    m_digitalOutCombo = digitalOutPair.second;
-    m_digitalOutCombo->setToolTip("Select the source for the digital outputs.");
-    addSection("DIGITAL OUTPUTS", digitalOutPair.first);
+    if (QString::fromStdString(m_alsa.getFoundCardName()) == "US144MKII") {
+        auto lineOutPair = createControlWidget("ch1 and ch2", {"ch1 and ch2", "ch3 and ch4"});
+        m_lineOutCombo = lineOutPair.second;
+        m_lineOutCombo->setToolTip("Select the source for the line outputs.");
+        addSection("LINE OUTPUTS", lineOutPair.first);
+
+        auto digitalOutPair = createControlWidget("ch3 and ch4", {"ch1 and ch2", "ch3 and ch4"});
+        m_digitalOutCombo = digitalOutPair.second;
+        m_digitalOutCombo->setToolTip("Select the source for the digital outputs.");
+        addSection("DIGITAL OUTPUTS", digitalOutPair.first);
+    }
 
     middlePanel->addStretch();
 
@@ -190,22 +201,26 @@ void MainWindow::initUi() {
 
     connect(m_lineOutCombo, &QComboBox::currentIndexChanged, this, [this](int index){ onControlChanged("Line OUTPUTS Source", index, m_lineOutCombo); });
     connect(m_digitalOutCombo, &QComboBox::currentIndexChanged, this, [this](int index){ onControlChanged("Digital OUTPUTS Source", index, m_digitalOutCombo); });
-    connect(m_capture12Combo, &QComboBox::currentIndexChanged, this, [this](int index){ onControlChanged("ch1 and ch2 Source", index, m_capture12Combo); });
-    connect(m_capture34Combo, &QComboBox::currentIndexChanged, this, [this](int index){ onControlChanged("ch3 and ch4 Source", index, m_capture34Combo); });
+    if (QString::fromStdString(m_alsa.getFoundCardName()) == "US144MKII") {
+        connect(m_capture12Combo, &QComboBox::currentIndexChanged, this, [this](int index){ onControlChanged("ch1 and ch2 Source", index, m_capture12Combo); });
+        connect(m_capture34Combo, &QComboBox::currentIndexChanged, this, [this](int index){ onControlChanged("ch3 and ch4 Source", index, m_capture34Combo); });
+    }
 }
 
 void MainWindow::loadDynamicSettings() {
     m_infoLabels["driver_version"]->setText(QString::fromStdString(m_alsa.readSysfsAttr("driver_version")));
-    m_infoLabels["device"]->setText("US-144 MKII");
+    m_infoLabels["device"]->setText(QString::fromStdString(m_alsa.getFoundCardName()));
     m_infoLabels["sample_width"]->setText("24 bits");
 
     long rate_val = m_alsa.getControlValue("Sample Rate");
     m_infoLabels["sample_rate"]->setText(rate_val > 0 ? QString("%1 kHz").arg(rate_val / 1000.0, 0, 'f', 1) : "N/A (inactive)");
 
-    updateCombo(m_lineOutCombo, "Line OUTPUTS Source");
-    updateCombo(m_digitalOutCombo, "Digital OUTPUTS Source");
-    updateCombo(m_capture12Combo, "ch1 and ch2 Source");
-    updateCombo(m_capture34Combo, "ch3 and ch4 Source");
+    if (QString::fromStdString(m_alsa.getFoundCardName()) == "US144MKII") {
+        updateCombo(m_lineOutCombo, "Line OUTPUTS Source");
+        updateCombo(m_digitalOutCombo, "Digital OUTPUTS Source");
+        updateCombo(m_capture12Combo, "ch1 and ch2 Source");
+        updateCombo(m_capture34Combo, "ch3 and ch4 Source");
+    }
 }
 
 void MainWindow::updateCombo(QComboBox* combo, const std::string& controlName) {
@@ -253,7 +268,7 @@ void MainWindow::showAboutDialog() {
 
     if (!m_aboutDialog) {
         m_aboutDialog = new QDialog(this);
-        m_aboutDialog->setWindowTitle("About TASCAM US-144MKII Control Panel");
+        m_aboutDialog->setWindowTitle(QString("About TASCAM %1 Control Panel").arg(QString::fromStdString(m_alsa.getFoundCardName())));
         m_aboutDialog->setWindowIcon(QIcon(":/tascam-control-panel.png"));
         m_aboutDialog->setFixedSize(400, 250);
 

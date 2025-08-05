@@ -40,6 +40,7 @@ rm -rf AppDir
 -i "${PROJECT_DIR}/resources/tascam-control-panel.png" \
 -d "${PROJECT_DIR}/tascam-control-panel.desktop" \
 --output appimage
+mv "TASCAM_USX2Y_MKII_Control_Panel-x86_64.AppImage" "TASCAM_US122MKII_US144MKII_Control_Panel.AppImage"
 
 
 echo ""

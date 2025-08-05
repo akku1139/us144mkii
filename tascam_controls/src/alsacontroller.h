@@ -2,12 +2,15 @@
 #define ALSACONTROLLER_H
 
 #include <string>
+#include <vector>
 #include <optional>
 
 class AlsaController
 {
 public:
-    AlsaController(const std::string& target_card_name = "US-144MKII");
+    AlsaController(const std::vector<std::string>& target_card_names = {"US-144MKII"});
+
+    std::string getFoundCardName() const;
 
     std::optional<std::string> getCardId() const;
     int getCardNumber() const;
@@ -21,6 +24,7 @@ private:
     std::string m_card_id_str;
     int m_card_num = -1;
     bool m_card_found = false;
+    std::string m_found_card_name;
 };
 
 #endif

@@ -3,7 +3,8 @@
 <qresource prefix="/">
     <file>bg.png</file>
     <file>logo.png</file>
-    <file>device.png</file>
+    <file>device_122mkii.png</file>
+    <file>device_144mkii.png</file>
     <file>tascam-control-panel.png</file>
 </qresource>
 </RCC>

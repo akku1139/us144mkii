@@ -1,6 +1,6 @@
-# ALSA Driver for TASCAM US-144MKII
+# ALSA Driver for TASCAM US-122MKII & US-144MKII
 
-An unofficial ALSA kernel module for the TASCAM US-144MKII USB audio interface.
+An unofficial ALSA kernel module for the TASCAM US-122MKII and US-144MKII USB audio interfaces.
 
 ## ❗ Current Status: Work in Progress
 
@@ -80,7 +80,7 @@ The standard kernel includes a driver that will conflict with our custom module.
 > ```
 > ATTR{idVendor}=="0644", ATTR{idProduct}=="8007", ATTR{authorized}="0"
 > ```
-> After saving, run `sudo udevadm control --reload` and reboot. Note that with this rule in place, you will likely need to load the `us144mkii` driver manually with `sudo insmod snd-usb-us144mkii.ko` each time. The `modprobe` method is preferred for automatic loading.
+> After saving, run `sudo udevadm control --reload` and reboot. Note that with this rule in place, you will likely need to load the `usx2y_mkii` driver manually with `sudo insmod snd-usb-usx2y-mkii.ko` each time. The `modprobe` method is preferred for automatic loading.
 
 
 ### Step 3: Compile and Load the Driver
@@ -95,26 +95,26 @@ This process will build the module from source and load it for your current sess
 
 3.  Load the compiled module into the kernel:
     ```bash
-    sudo insmod snd-usb-us144mkii.ko
+    sudo insmod snd-usb-usx2y-mkii.ko
     ```
 
-4.  Connect your TASCAM US-144MKII. Verify that the driver loaded and the audio card is recognized by the system:
+4.  Connect your TASCAM US-122MKII or US-144MKII. Verify that the driver loaded and the audio card is recognized by the system:
     ```bash
     # Check if the kernel module is loaded
-    lsmod | grep us144mkii
+    lsmod | grep usx2y_mkii
 
     # Check if ALSA sees the new sound card
     aplay -l
     ```
-    The first command should show `us144mkii`. The second command should list your "TASCAM US-144MKII" as an available playback device. You should now be able to select it in your audio settings and play sound.
+    The first command should show `usx2y_mkii`. The second command should list your "TASCAM US-122MKII" or "TASCAM US-144MKII" as an available playback device. You should now be able to select it in your audio settings and play sound.
 
 ### Step 4: Install for Automatic Loading on Boot
 To make the driver load automatically every time you start your computer, follow these steps after you have successfully compiled it in Step 3.
 
 1.  **Copy the compiled module to the kernel's extra modules directory.** This makes it available to system tools.
     ```bash
-    sudo mkdir -p /lib/modules/$(uname -r)/extra/us144mkii
-    sudo cp snd-usb-us144mkii.ko /lib/modules/$(uname -r)/extra/us144mkii
+    sudo mkdir -p /lib/modules/$(uname -r)/extra/usx2y_mkii
+    sudo cp snd-usb-usx2y-mkii.ko /lib/modules/$(uname -r)/extra/usx2y_mkii
     ```
 
 2.  **Update module dependencies.** This command rebuilds the map of modules so the kernel knows about our new driver.
@@ -122,14 +122,13 @@ To make the driver load automatically every time you start your computer, follow
     sudo depmod -a
     ```
 
-Now, after a reboot, the `us144mkii` driver should load automatically.
+Now, after a reboot, the `usx2y_mkii` driver should load automatically.
 
 ### Tascam Control Panel
 
 <img width="552" height="469" alt="Screenshot_20250720_231914" src="https://github.com/user-attachments/assets/960f58dc-a072-492e-9cf8-189d2801af29" />
 
-
-A control panel app built with Qt6 and ALSA.
+A control panel app built with Qt6 and ALSA. It supports both the US-122MKII and US-144MKII devices, dynamically adjusting controls and display based on the connected hardware.
 
 Get it from releases or build it.
 

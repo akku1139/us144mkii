@@ -1,5 +1,6 @@
 [Desktop Entry]
-Name=TASCAM US-144MKII Control Panel
+Name=TASCAM USX2Y MKII Control Panel
+Comment=Control panel for TASCAM US-122MKII and US-144MKII audio interfaces
 Exec=TascamControlPanel
 Icon=tascam-control-panel
 Type=Application

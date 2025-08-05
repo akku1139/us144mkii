@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iostream>
 
-AlsaController::AlsaController(const std::string& target_card_name)
+AlsaController::AlsaController(const std::vector<std::string>& target_card_names)
 {
     int card = -1;
     if (snd_card_next(&card) < 0 || card < 0) {
@@ -14,14 +14,20 @@ AlsaController::AlsaController(const std::string& target_card_name)
     while (card >= 0) {
         char* long_name = nullptr;
         snd_card_get_longname(card, &long_name);
-        if (long_name && std::string(long_name).find(target_card_name) != std::string::npos) {
-            m_card_num = card;
-            m_card_id_str = "hw:" + std::to_string(card);
-            m_card_found = true;
+        if (long_name) {
+            for (const std::string& target_card_name : target_card_names) {
+                if (std::string(long_name).find(target_card_name) != std::string::npos) {
+                    m_card_num = card;
+                    m_card_id_str = "hw:" + std::to_string(card);
+                    m_card_found = true;
+                    m_found_card_name = target_card_name;
+                    free(long_name);
+                    break;
+                }
+            }
+            if (m_card_found) break;
             free(long_name);
-            break;
         }
-        if (long_name) free(long_name);
 
         if (snd_card_next(&card) < 0) {
             break;
@@ -29,8 +35,12 @@ AlsaController::AlsaController(const std::string& target_card_name)
     }
 
     if (!m_card_found) {
-        std::cerr << "Target sound card '" << target_card_name << "' not found." << std::endl;
+        std::cerr << "Target sound card not found." << std::endl;
     }
+}
+
+std::string AlsaController::getFoundCardName() const {
+    return m_found_card_name;
 }
 
 std::optional<std::string> AlsaController::getCardId() const {

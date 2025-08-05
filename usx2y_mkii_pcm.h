@@ -4,13 +4,15 @@
 #ifndef __US144MKII_PCM_H
 #define __US144MKII_PCM_H
 
-#include "us144mkii.h"
+#define NUM_CHANNELS 4
+
+#include "usx2y_mkii.h"
 
 /**
- * tascam_pcm_hw - Hardware capabilities for TASCAM US-144MKII PCM.
+ * tascam_pcm_hw - Hardware capabilities for TASCAM US-122MKII/US-144MKII PCM.
  *
  * Defines the supported PCM formats, rates, channels, and buffer/period sizes
- * for the TASCAM US-144MKII audio interface.
+ * for the TASCAM US-122MKII/US-144MKII audio interfaces.
  */
 extern const struct snd_pcm_hardware tascam_pcm_hw;
 
@@ -78,7 +80,7 @@ void capture_urb_complete(struct urb *urb);
 int tascam_init_pcm(struct snd_pcm *pcm);
 
 /**
- * us144mkii_configure_device_for_rate() - Set sample rate via USB control msgs
+ * usx2y_mkii_configure_device_for_rate() - Set sample rate via USB control msgs
  * @tascam: the tascam_card instance
  * @rate: the target sample rate (e.g., 44100, 96000)
  *
@@ -87,28 +89,28 @@ int tascam_init_pcm(struct snd_pcm *pcm);
  *
  * Return: 0 on success, or a negative error code on failure.
  */
-int us144mkii_configure_device_for_rate(struct tascam_card *tascam, int rate);
+int usx2y_mkii_configure_device_for_rate(struct tascam_card *tascam, int rate);
 
 /**
- * process_playback_routing_us144mkii() - Apply playback routing matrix
+ * process_playback_routing_usx2y_mkii() - Apply playback routing matrix
  * @tascam: The driver instance.
  * @src_buffer: Buffer containing 4 channels of S24_3LE audio from ALSA.
  * @dst_buffer: Buffer to be filled for the USB device.
  * @frames: Number of frames to process.
  */
-void process_playback_routing_us144mkii(struct tascam_card *tascam,
-					const u8 *src_buffer, u8 *dst_buffer,
-					size_t frames);
+void process_playback_routing_usx2y_mkii(struct tascam_card *tascam,
+                                         const u8 *src_buffer, u8 *dst_buffer,
+                                         size_t frames);
 
 /**
- * process_capture_routing_us144mkii() - Apply capture routing matrix
+ * process_capture_routing_usx2y_mkii() - Apply capture routing matrix
  * @tascam: The driver instance.
  * @decoded_block: Buffer containing 4 channels of S32LE decoded audio.
  * @routed_block: Buffer to be filled for ALSA.
  */
-void process_capture_routing_us144mkii(struct tascam_card *tascam,
-				       const s32 *decoded_block,
-				       s32 *routed_block);
+void process_capture_routing_usx2y_mkii(struct tascam_card *tascam,
+                                        const s32 *decoded_block,
+                                        s32 *routed_block);
 
 /**
  * tascam_pcm_hw_params() - Configures hardware parameters for PCM streams.
@@ -123,7 +125,7 @@ void process_capture_routing_us144mkii(struct tascam_card *tascam,
  * Return: 0 on success, or a negative error code on failure.
  */
 int tascam_pcm_hw_params(struct snd_pcm_substream *substream,
-			 struct snd_pcm_hw_params *params);
+                         struct snd_pcm_hw_params *params);
 
 /**
  * tascam_pcm_hw_free() - Frees hardware parameters for PCM streams.
@@ -138,7 +140,8 @@ int tascam_pcm_hw_free(struct snd_pcm_substream *substream);
 /**
  * tascam_pcm_trigger() - Triggers the start or stop of PCM streams.
  * @substream: The ALSA PCM substream.
- * @cmd: The trigger command (e.g., SNDRV_PCM_TRIGGER_START, SNDRV_PCM_TRIGGER_STOP).
+ * @cmd: The trigger command (e.g., SNDRV_PCM_TRIGGER_START,
+ * SNDRV_PCM_TRIGGER_STOP).
  *
  * This function handles starting and stopping of playback and capture streams
  * by submitting or killing the associated URBs. It ensures that both streams
