@@ -65,7 +65,8 @@ static int tascam_playback_prepare(struct snd_pcm_substream *substream)
 	tascam->feedback_synced = false;
 	tascam->feedback_urb_skip_count = NUM_FEEDBACK_URBS;
 	tascam->phase_accum = 0;
-	tascam->freq_q16 = (runtime->rate << 16) / 8000;
+	/* Initialize freq_q16: rate * 65536 / 8000 (use u64 div for precision at 96kHz) */
+	tascam->freq_q16 = div_u64(((u64)runtime->rate << 16), 8000);
 
 	atomic_set(&tascam->implicit_fb_frames, 0);
 
@@ -131,6 +132,9 @@ static int tascam_playback_trigger(struct snd_pcm_substream *substream, int cmd)
 		case SNDRV_PCM_TRIGGER_RESUME:
 			if (!atomic_read(&tascam->playback_active)) {
 				atomic_set(&tascam->playback_active, 1);
+				/* Reset feedback state on pause/resume to avoid phase accumulation */
+				tascam->feedback_synced = false;
+				tascam->feedback_urb_skip_count = NUM_FEEDBACK_URBS;
 				start = true;
 			}
 			break;
@@ -273,6 +277,10 @@ void playback_urb_complete(struct urb *urb)
 			tascam->phase_accum += tascam->freq_q16;
 			frames_for_packet = tascam->phase_accum >> 16;
 			tascam->phase_accum &= 0xFFFF;
+
+			if (frames_for_packet > 13)
+				frames_for_packet = 13;
+
 			urb->iso_frame_desc[i].offset = total_bytes_for_urb;
 			urb->iso_frame_desc[i].length = frames_for_packet * BYTES_PER_FRAME;
 			total_bytes_for_urb += urb->iso_frame_desc[i].length;
@@ -335,6 +343,7 @@ void playback_urb_complete(struct urb *urb)
 	if (usb_submit_urb(urb, GFP_ATOMIC) < 0) {
 		usb_unanchor_urb(urb);
 		atomic_dec(&tascam->active_urbs);
+		return;
 	}
 }
 
@@ -343,6 +352,7 @@ void feedback_urb_complete(struct urb *urb)
 	struct tascam_card *tascam = urb->context;
 	int ret, p;
 	unsigned long flags;
+	bool playback_active;
 
 	if (!tascam)
 		return;
@@ -351,12 +361,15 @@ void feedback_urb_complete(struct urb *urb)
 		atomic_dec(&tascam->active_urbs);
 		return;
 	}
-	if (!atomic_read(&tascam->playback_active)) {
+
+	spin_lock_irqsave(&tascam->lock, flags);
+	playback_active = atomic_read(&tascam->playback_active);
+	if (!playback_active) {
+		spin_unlock_irqrestore(&tascam->lock, flags);
 		atomic_dec(&tascam->active_urbs);
 		return;
 	}
 
-	spin_lock_irqsave(&tascam->lock, flags);
 	if (tascam->feedback_urb_skip_count > 0) {
 		tascam->feedback_urb_skip_count--;
 		spin_unlock_irqrestore(&tascam->lock, flags);
@@ -369,7 +382,7 @@ void feedback_urb_complete(struct urb *urb)
 			u32 sum = data[0] + data[1] + data[2];
 			u32 target_freq_q16 = ((sum * 65536) / 3) / 8;
 
-			tascam->freq_q16 = (tascam->freq_q16 * PLL_FILTER_OLD_WEIGHT + target_freq_q16 * PLL_FILTER_NEW_WEIGHT) / PLL_FILTER_DIVISOR;
+			tascam->freq_q16 = (tascam->freq_q16 * PLL_FILTER_OLD_WEIGHT + target_freq_q16 * PLL_FILTER_NEW_WEIGHT + (PLL_FILTER_DIVISOR >> 1)) / PLL_FILTER_DIVISOR;
 			tascam->feedback_synced = true;
 		}
 	}
