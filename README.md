@@ -1,9 +1,3 @@
-
-
-## ARCHIVED!!!! My US-144MKI stopped working so I won't develop this any longer. 
-
-## Feel free to fork and improve it yourself.
-
 # ALSA Driver for TASCAM US-144MKII
 
 An unofficial ALSA kernel module for the TASCAM US-144MKII & US-144 USB audio interface.
@@ -12,7 +6,7 @@ For TASCAM US-122MKII check us122mkii branch.
 
 ## Project Status
 
-**Upstream Status**  
+**Upstream Status**
 A version of this driver has been merged into the Linux kernel. However, the in-kernel driver
 is **older and lacks fixes and improvements present in this repository**.
 
@@ -32,7 +26,7 @@ functionality and fixes not yet available in the upstream kernel.
 This is an out-of-tree kernel module, meaning you must compile it against the headers for your specific kernel version.
 
 Old version of this driver has been merged and is available on rolling release distros like Arch(6.18.x).
-For Arch users, a community-maintained DKMS package is available in AUR if user intends to install improved driver.
+For Arch users, the DKMS package is available in AUR if user intends to install improved driver.
 Install it via:
 ```bash
 paru -S us144mkii-dkms-git
